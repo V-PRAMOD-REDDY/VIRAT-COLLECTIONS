@@ -12,9 +12,9 @@ const ShopProvider = ({ children }) => {
 
   const currency = '₹';
   const delivery_fee = 50;
+  // ఇది పక్కాగా ఇక్కడే ఉండాలి
   const backendUrl = "https://virat-collections.onrender.com";
 
-  // 1. Fetching Products from Database
   const getProductsData = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/product/list`);
@@ -29,12 +29,10 @@ const ShopProvider = ({ children }) => {
     }
   }
 
-  // 2. Fetch User Cart from Backend (Syncing on Login)
-  const getUserCart = async (token) => {
+  const getUserCart = async (userToken) => {
     try {
-      const response = await axios.post(`${backendUrl}/api/cart/get`, {}, { headers: { token } });
+      const response = await axios.post(`${backendUrl}/api/cart/get`, {}, { headers: { token: userToken } });
       if (response.data.success) {
-        // Converting Backend Object Structure to Frontend Array Structure
         const cartData = response.data.cartData;
         let tempCart = [];
         for (const items in cartData) {
@@ -58,29 +56,21 @@ const ShopProvider = ({ children }) => {
     }
   }
 
-  // 3. Add to Cart Logic
   const addToCart = async (product, size) => {
     if (!size) {
       toast.error("Please select a size first!");
       return;
     }
-
-    // Ensure price is a number to prevent NaN in totals
     const formattedProduct = {
         ...product,
-        price: Number(product.price) || 0,
-        quantity: 1
+        price: Number(product.price) || 0
     };
-
     const existingItem = cart.find(item => item._id === product._id && item.size === size);
-    
     let newCart = existingItem 
       ? cart.map(item => item._id === product._id && item.size === size ? { ...item, quantity: item.quantity + 1 } : item)
-      : [...cart, { ...formattedProduct, size }];
-    
+      : [...cart, { ...formattedProduct, size, quantity: 1 }];
     setCart(newCart);
     toast.success("Added to cart!");
-    
     if (token) {
       try {
         await axios.post(`${backendUrl}/api/cart/add`, { itemId: product._id, size }, { headers: { token } });
@@ -90,14 +80,10 @@ const ShopProvider = ({ children }) => {
     }
   };
 
-  // 4. Cart Helpers
-  const getCartCount = () => cart.reduce((total, item) => total + item.quantity, 0);
-
   const updateQuantity = async (id, size, quantity) => {
     let newCart = quantity <= 0 
       ? cart.filter(item => !(item._id === id && item.size === size))
       : cart.map(item => item._id === id && item.size === size ? { ...item, quantity: Number(quantity) } : item);
-    
     setCart(newCart);
     if (token) {
       try {
@@ -108,7 +94,8 @@ const ShopProvider = ({ children }) => {
     }
   };
 
-  // 5. Total Price Calculation (Fixes NaN)
+  const getCartCount = () => cart.reduce((total, item) => total + item.quantity, 0);
+
   const getCartTotal = () => {
     return cart.reduce((total, item) => {
       const price = Number(item.price) || 0; 
@@ -117,7 +104,6 @@ const ShopProvider = ({ children }) => {
     }, 0);
   };
 
-  // Sync token and cart on load
   useEffect(() => {
     getProductsData();
   }, []);
