@@ -12,7 +12,7 @@ const ShopProvider = ({ children }) => {
 
   const currency = '₹';
   const delivery_fee = 50;
-  const backendUrl = "http://localhost:4000";
+  // const backendUrl = "http://localhost:4000";
 
   // 1. Fetching Products from Database
   const getProductsData = async () => {
