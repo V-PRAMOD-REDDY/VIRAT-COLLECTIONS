@@ -7,11 +7,10 @@ import { toast } from 'react-toastify';
 const ProductDetail = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  // ShopContext నుండి అవసరమైనవి తీసుకుంటున్నాము
   const { products, currency, addToCart, token } = useContext(ShopContext);
   const [productData, setProductData] = useState(false);
   const [image, setImage] = useState('');
-  const [size, setSize] = useState(''); // ఒకేసారి ఒక సైజును మాత్రమే ఎంచుకోవాలి
+  const [selectedSizes, setSelectedSizes] = useState([]); // Array for Multi-selection
   const [isLiked, setIsLiked] = useState(false);
 
   const fetchProductData = async () => {
@@ -27,6 +26,15 @@ const ProductDetail = () => {
     fetchProductData();
   }, [productId, products]);
 
+  // Multi-size selection logic
+  const toggleSize = (size) => {
+    if (selectedSizes.includes(size)) {
+      setSelectedSizes(prev => prev.filter(item => item !== size));
+    } else {
+      setSelectedSizes(prev => [...prev, size]);
+    }
+  }
+
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -39,35 +47,38 @@ const ProductDetail = () => {
     }
   };
 
-  // Buy Now Logic
   const handleBuyNow = async () => {
     if (!token) {
       toast.error("Please Login to Purchase!");
       navigate('/login');
       return;
     }
-    if (!size) {
-      toast.error("Please Select Size First!");
+    if (selectedSizes.length === 0) {
+      toast.error("Please Select at least one Size!");
       return;
     }
-    // ఇక్కడ productId మరియు size ని పంపుతున్నాము
-    await addToCart(productData._id, size);
+    // ఒక్కో సైజును బ్యాగ్‌లో యాడ్ చేయడం
+    for (const size of selectedSizes) {
+      await addToCart(productData._id, size);
+    }
     navigate('/cart');
   }
 
-  // Add to Bag Logic
   const handleAddToCart = async () => {
     if (!token) {
       toast.error("Please Login First!");
       navigate('/login');
       return;
     }
-    if (!size) {
+    if (selectedSizes.length === 0) {
       toast.error("Please Select Size!");
       return;
     }
-    // ఇక్కడ productId మరియు size ని పంపుతున్నాము
-    await addToCart(productData._id, size);
+    // ఒక్కో సైజును బ్యాగ్‌లో యాడ్ చేయడం
+    for (const size of selectedSizes) {
+      await addToCart(productData._id, size);
+    }
+    setSelectedSizes([]); // Clear selection after adding
   }
 
   return productData ? (
@@ -125,16 +136,20 @@ const ProductDetail = () => {
           <p className='mt-6 text-gray-500 md:w-4/5 leading-relaxed text-sm font-medium'>{productData.description}</p>
           
           <div className='flex flex-col gap-4 my-8'>
-            <p className='font-black uppercase text-[10px] tracking-[0.2em] text-gray-400'>Select Your Size</p>
+            <div className='flex justify-between items-center w-full md:w-4/5'>
+                <p className='font-black uppercase text-[10px] tracking-[0.2em] text-gray-400'>Select Sizes (Multi-selection)</p>
+                {selectedSizes.length > 0 && <button onClick={()=>setSelectedSizes([])} className='text-[9px] font-black text-red-500 uppercase border-b border-red-500'>Clear All</button>}
+            </div>
             <div className='flex gap-3 flex-wrap'>
               {productData.sizes.map((item, index) => (
                 <button 
-                  onClick={() => setSize(item)} // ఇక్కడ సైజును సెట్ చేస్తున్నాము
+                  onClick={() => toggleSize(item)} 
                   key={index} 
                   disabled={productData.inStock === false}
-                  className={`w-14 h-14 flex items-center justify-center border-2 rounded-2xl font-black transition-all duration-300 ${productData.inStock === false ? 'opacity-20 cursor-not-allowed border-gray-100' : item === size ? 'border-black bg-black text-white scale-110 shadow-xl' : 'bg-gray-50 border-gray-100 hover:border-gray-300 hover:bg-white'}`}
+                  className={`w-14 h-14 flex flex-col items-center justify-center border-2 rounded-2xl font-black transition-all duration-300 ${productData.inStock === false ? 'opacity-20 cursor-not-allowed border-gray-100' : selectedSizes.includes(item) ? 'border-black bg-black text-white scale-110 shadow-xl' : 'bg-gray-50 border-gray-100 hover:border-gray-300 hover:bg-white'}`}
                 >
-                  {item}
+                  <span className='text-sm'>{item}</span>
+                  {selectedSizes.includes(item) && <span className='text-[8px] mt-0.5 opacity-80'>Selected</span>}
                 </button>
               ))}
             </div>
@@ -145,9 +160,10 @@ const ProductDetail = () => {
             {productData.inStock !== false ? (
               <>
                 <button onClick={handleAddToCart} className='flex-1 bg-white text-black border-2 border-black px-8 py-5 text-xs font-black active:scale-95 rounded-2xl shadow-sm hover:bg-black hover:text-white transition-all uppercase tracking-widest'>
-                  Add to Bag
+                  Add to Bag {selectedSizes.length > 1 ? `(${selectedSizes.length})` : ''}
                 </button>
-                <button onClick={handleBuyNow} className='flex-1 bg-black text-white px-8 py-5 text-xs font-black active:scale-95 rounded-2xl shadow-xl hover:bg-gray-900 transition-all uppercase tracking-widest'>
+                {/* BUY NOW - Updated to Orange Color */}
+                <button onClick={handleBuyNow} className='flex-1 bg-orange-600 text-white px-8 py-5 text-xs font-black active:scale-95 rounded-2xl shadow-xl hover:bg-orange-700 transition-all uppercase tracking-widest'>
                   Buy Now
                 </button>
               </>
