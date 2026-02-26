@@ -7,7 +7,8 @@ import { toast } from 'react-toastify';
 const ProductDetail = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { products, currency, addToCart } = useContext(ShopContext);
+  // token ని ఇక్కడ యాడ్ చేశాను
+  const { products, currency, addToCart, token } = useContext(ShopContext);
   const [productData, setProductData] = useState(false);
   const [image, setImage] = useState('');
   const [size, setSize] = useState('');
@@ -34,14 +35,33 @@ const ProductDetail = () => {
     }
   };
 
+  // లాగిన్ అయి ఉంటేనే బై నౌ పనిచేస్తుంది
   const handleBuyNow = async () => {
+    if (!token) {
+      toast.error("Please Login to Purchase!");
+      navigate('/login');
+      return;
+    }
     if (!size) {
       toast.error("Please Select Size First!");
       return;
     }
-    // కార్ట్ లో NaN రాకుండా మొత్తం ఆబ్జెక్ట్ పంపుతున్నాం
     await addToCart(productData, size);
     navigate('/cart');
+  }
+
+  // లాగిన్ అయి ఉంటేనే యాడ్ టు బ్యాగ్ పనిచేస్తుంది
+  const handleAddToCart = async () => {
+    if (!token) {
+      toast.error("Please Login First!");
+      navigate('/login');
+      return;
+    }
+    if (!size) {
+      toast.error("Please Select Size!");
+      return;
+    }
+    await addToCart(productData, size);
   }
 
   return productData ? (
@@ -117,7 +137,8 @@ const ProductDetail = () => {
           <div className='flex flex-col sm:flex-row gap-4 w-full md:w-4/5 mt-8'>
             {productData.inStock !== false ? (
               <>
-                <button onClick={() => { if(!size) { toast.error("Please Select Size!"); return; } addToCart(productData, size); }} className='flex-1 bg-black text-white px-8 py-5 text-xs font-black active:bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all uppercase tracking-widest'>
+                {/* ఇక్కడ handleAddToCart మార్చాను */}
+                <button onClick={handleAddToCart} className='flex-1 bg-black text-white px-8 py-5 text-xs font-black active:bg-gray-800 rounded-2xl shadow-xl hover:shadow-2xl transition-all uppercase tracking-widest'>
                   Add to Bag
                 </button>
                 <button onClick={handleBuyNow} className='flex-1 bg-orange-600 text-white px-8 py-5 text-xs font-black active:bg-orange-700 rounded-2xl shadow-xl hover:shadow-2xl transition-all uppercase tracking-widest'>

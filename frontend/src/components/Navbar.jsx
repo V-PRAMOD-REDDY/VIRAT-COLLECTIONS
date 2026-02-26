@@ -16,7 +16,6 @@ const Navbar = () => {
     navigate('/login');
   };
 
-  // 👇 ఎంటర్ నొక్కినప్పుడు షాప్ పేజీకి నావిగేట్ చేయడానికి
   const handleSearch = (e) => {
     if (e.key === 'Enter') {
       navigate('/shop');
@@ -37,18 +36,19 @@ const Navbar = () => {
             </p>
           </Link>
           
+          {/* Desktop Menu */}
           <ul className='hidden md:flex gap-10 text-[13px] text-black uppercase font-bold tracking-widest items-center'>
             <NavLink to='/' className='hover:text-blue-600 transition-all'>Home</NavLink>
             <NavLink to='/shop' className='hover:text-blue-600 transition-all'>Shop</NavLink>
             <NavLink to='/about' className='hover:text-blue-600 transition-all'>About</NavLink>
           </ul>
 
-          {/* Desktop Search Section */}
+          {/* Desktop Search */}
           <div className='hidden md:flex flex-1 max-w-sm items-center bg-gray-100 px-4 py-2 rounded-2xl'>
             <input 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={handleSearch} // 👈 ఇక్కడ యాడ్ చేశాను
+              onKeyDown={handleSearch}
               className='bg-transparent outline-none text-sm w-full font-medium' 
               type="text" 
               placeholder='Search products...' 
@@ -57,6 +57,7 @@ const Navbar = () => {
           </div>
 
           <div className='flex items-center gap-5'>
+            {/* Desktop User Profile Dropdown */}
             <div className='group relative hidden md:block'>
               <HiOutlineUser onClick={() => !token && navigate('/login')} className='text-2xl cursor-pointer hover:text-blue-600' />
               {token && (
@@ -82,7 +83,7 @@ const Navbar = () => {
         
         {/* Mobile Search Box */}
         <div className='md:hidden px-4 pb-4'>
-           <div className='flex items-center bg-gray-100 px-4 py-2 rounded-xl'>
+            <div className='flex items-center bg-gray-100 px-4 py-2 rounded-xl'>
               <input 
                 value={search} 
                 onChange={(e) => setSearch(e.target.value)} 
@@ -92,16 +93,24 @@ const Navbar = () => {
                 placeholder='Search...' 
               />
               <HiOutlineSearch onClick={() => navigate('/shop')} className='text-gray-400' />
-           </div>
+            </div>
         </div>
       </nav>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation - మునుపటిలాగే 4 ఐకాన్లు మాత్రమే */}
       <div className='fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 md:hidden z-50 rounded-t-[2rem] shadow-lg'>
-        <NavLink to='/' className={({isActive}) => `flex flex-col items-center gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}><HiOutlineHome className='text-2xl' /><p className='text-[10px] font-bold uppercase'>Home</p></NavLink>
-        <NavLink to='/shop' className={({isActive}) => `flex flex-col items-center gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}><HiOutlineViewGrid className='text-2xl' /><p className='text-[10px] font-bold uppercase'>Shop</p></NavLink>
-        <NavLink to='/orders' className={({isActive}) => `flex flex-col items-center gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}><HiOutlineTruck className='text-2xl' /><p className='text-[10px] font-bold uppercase'>Orders</p></NavLink>
-        <NavLink to='/profile' className={({isActive}) => `flex flex-col items-center gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}><HiOutlineUser className='text-2xl' /><p className='text-[10px] font-bold uppercase'>Profile</p></NavLink>
+        <NavLink to='/' className={({isActive}) => `flex flex-col items-center gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+          <HiOutlineHome className='text-2xl' /><p className='text-[10px] font-bold uppercase'>Home</p>
+        </NavLink>
+        <NavLink to='/shop' className={({isActive}) => `flex flex-col items-center gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+          <HiOutlineViewGrid className='text-2xl' /><p className='text-[10px] font-bold uppercase'>Shop</p>
+        </NavLink>
+        <NavLink to='/orders' className={({isActive}) => `flex flex-col items-center gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+          <HiOutlineTruck className='text-2xl' /><p className='text-[10px] font-bold uppercase'>Orders</p>
+        </NavLink>
+        <NavLink to='/profile' className={({isActive}) => `flex flex-col items-center gap-1 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+          <HiOutlineUser className='text-2xl' /><p className='text-[10px] font-bold uppercase'>Profile</p>
+        </NavLink>
       </div>
     </div>
   );

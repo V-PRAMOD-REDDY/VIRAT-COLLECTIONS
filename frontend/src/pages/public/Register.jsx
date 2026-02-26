@@ -14,6 +14,7 @@ const Register = () => {
     const onSubmitHandler = async (e) => {
         e.preventDefault();
         try {
+            // backendUrl సరిగ్గా అందుతుందో లేదో ఇక్కడ axios చెక్ చేస్తుంది
             const response = await axios.post(`${backendUrl}/api/user/register`, { name, email, password });
             if (response.data.success) {
                 setToken(response.data.token);
@@ -23,7 +24,7 @@ const Register = () => {
                 toast.error(response.data.message);
             }
         } catch (error) {
-            toast.error("Registration Failed!");
+            toast.error(error.response?.data?.message || "Registration Failed!");
         }
     }
 
