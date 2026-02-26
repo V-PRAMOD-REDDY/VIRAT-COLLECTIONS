@@ -7,10 +7,11 @@ import { toast } from 'react-toastify';
 const ProductDetail = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
+  // ShopContext నుండి అవసరమైనవి తీసుకుంటున్నాము
   const { products, currency, addToCart, token } = useContext(ShopContext);
   const [productData, setProductData] = useState(false);
   const [image, setImage] = useState('');
-  const [size, setSize] = useState('');
+  const [size, setSize] = useState(''); // ఒకేసారి ఒక సైజును మాత్రమే ఎంచుకోవాలి
   const [isLiked, setIsLiked] = useState(false);
 
   const fetchProductData = async () => {
@@ -18,7 +19,6 @@ const ProductDetail = () => {
     if (item) {
       setProductData(item);
       setImage(item.image[0]);
-      // పేజీ పైకి వెళ్లేలా
       window.scrollTo(0, 0);
     }
   }
@@ -30,7 +30,7 @@ const ProductDetail = () => {
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: productData.name,
+        title: productData?.name,
         url: window.location.href,
       }).catch(console.error);
     } else {
@@ -39,6 +39,7 @@ const ProductDetail = () => {
     }
   };
 
+  // Buy Now Logic
   const handleBuyNow = async () => {
     if (!token) {
       toast.error("Please Login to Purchase!");
@@ -49,10 +50,12 @@ const ProductDetail = () => {
       toast.error("Please Select Size First!");
       return;
     }
-    await addToCart(productData, size);
+    // ఇక్కడ productId మరియు size ని పంపుతున్నాము
+    await addToCart(productData._id, size);
     navigate('/cart');
   }
 
+  // Add to Bag Logic
   const handleAddToCart = async () => {
     if (!token) {
       toast.error("Please Login First!");
@@ -63,7 +66,8 @@ const ProductDetail = () => {
       toast.error("Please Select Size!");
       return;
     }
-    await addToCart(productData, size);
+    // ఇక్కడ productId మరియు size ని పంపుతున్నాము
+    await addToCart(productData._id, size);
   }
 
   return productData ? (
@@ -125,7 +129,7 @@ const ProductDetail = () => {
             <div className='flex gap-3 flex-wrap'>
               {productData.sizes.map((item, index) => (
                 <button 
-                  onClick={() => setSize(item)} 
+                  onClick={() => setSize(item)} // ఇక్కడ సైజును సెట్ చేస్తున్నాము
                   key={index} 
                   disabled={productData.inStock === false}
                   className={`w-14 h-14 flex items-center justify-center border-2 rounded-2xl font-black transition-all duration-300 ${productData.inStock === false ? 'opacity-20 cursor-not-allowed border-gray-100' : item === size ? 'border-black bg-black text-white scale-110 shadow-xl' : 'bg-gray-50 border-gray-100 hover:border-gray-300 hover:bg-white'}`}
