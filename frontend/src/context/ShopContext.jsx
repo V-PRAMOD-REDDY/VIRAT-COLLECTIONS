@@ -13,10 +13,10 @@ const ShopProvider = ({ children }) => {
   const currency = '₹';
   const delivery_fee = 50;
 
-  // ✅ LIVE BACKEND
-  const backendUrl = 'https://virat-collections.onrender.com';
+  // ✅ BACKEND URL FROM ENV (FINAL & CORRECT)
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-  // ✅ GET CART COUNT (🔥 FIXED)
+  // ✅ GET CART COUNT
   const getCartCount = () => {
     return cart.reduce((total, item) => total + (item.quantity || 1), 0);
   };
@@ -28,17 +28,19 @@ const ShopProvider = ({ children }) => {
       if (response.data.success) {
         setProducts(response.data.products);
       } else {
-        toast.error(response.data.message);
+        toast.error(response.data.message || 'Failed to fetch products');
       }
     } catch (error) {
       console.error(error);
-      toast.error('Database connection failed!');
+      toast.error('Server not reachable');
     }
   };
 
   useEffect(() => {
-    getProductsData();
-  }, []);
+    if (backendUrl) {
+      getProductsData();
+    }
+  }, [backendUrl]);
 
   useEffect(() => {
     if (token) {
@@ -49,7 +51,7 @@ const ShopProvider = ({ children }) => {
     }
   }, [token]);
 
-  // ✅ CONTEXT VALUE (🔥 getCartCount added)
+  // ✅ CONTEXT VALUE
   const value = {
     products,
     currency,
