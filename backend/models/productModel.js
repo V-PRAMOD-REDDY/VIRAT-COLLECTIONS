@@ -1,19 +1,31 @@
 import mongoose from "mongoose";
 
-const productSchema = new mongoose.Schema({
+const productSchema = new mongoose.Schema(
+  {
     name: { type: String, required: true },
     description: { type: String, required: true },
     price: { type: Number, required: true },
-    image: { type: Array, required: true },
+
+    image: { type: [String], required: true },
+
     category: { type: String, required: true },
     subCategory: { type: String, required: true },
-    sizes: { type: Array, required: true },
-    bestseller: { type: Boolean },
-    offer: { type: Boolean, default: false },
-    inStock: { type: Boolean, default: true }, // 👈 ఈ లైన్ కొత్తగా చేర్చబడింది
-    date: { type: Number, required: true }
-})
 
-const productModel = mongoose.models.product || mongoose.model("product", productSchema);
+    sizes: { type: [String], required: true },
+
+    bestseller: { type: Boolean, default: false },
+    offer: { type: Boolean, default: false },
+
+    inStock: { type: Boolean, default: true }, // product visibility control
+
+    date: { type: Number, required: true }
+  },
+  {
+    timestamps: true // createdAt, updatedAt
+  }
+);
+
+const productModel =
+  mongoose.models.product || mongoose.model("product", productSchema);
 
 export default productModel;

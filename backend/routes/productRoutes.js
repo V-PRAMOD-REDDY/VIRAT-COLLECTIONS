@@ -1,23 +1,27 @@
-import express from 'express';
-import { 
-    addProduct, listProducts, removeProduct, singleProduct, updateProduct,
-    updateHeroBanner, getHeroBanner // 👈 కొత్త కంట్రోలర్లను ఇంపోర్ట్ చేయండి
-} from '../controllers/productController.js';
-import multer from 'multer';
-import adminAuth from '../middleware/adminAuth.js'; // అడ్మిన్ మాత్రమే మార్చగలిగేలా
+import express from "express";
+import multer from "multer";
+import adminAuth from "../middleware/adminAuth.js";
+import {
+  addProduct,
+  listProducts,
+  removeProduct,
+  singleProduct,
+  updateProduct,
+  updateHeroBanner,
+  getHeroBanner
+} from "../controllers/productController.js";
 
-const productRouter = express.Router();
-const storage = multer.diskStorage({});
-const upload = multer({ storage });
+const router = express.Router();
+const upload = multer({ storage: multer.diskStorage({}) });
 
-productRouter.post('/add', upload.fields([{ name: 'image1', maxCount: 1 }]), addProduct);
-productRouter.post('/remove', removeProduct);
-productRouter.post('/update', updateProduct); 
-productRouter.get('/single', singleProduct);
-productRouter.get('/list', listProducts);
+router.post("/add", adminAuth, upload.fields([{ name: "image1", maxCount: 1 }]), addProduct);
+router.post("/remove", adminAuth, removeProduct);
+router.post("/update", adminAuth, updateProduct);
 
-// --- 🆕 హీరో బ్యానర్ రూట్స్ ---
-productRouter.post('/update-banner', adminAuth, upload.single('image'), updateHeroBanner);
-productRouter.get('/get-banner', getHeroBanner);
+router.get("/list", listProducts);
+router.get("/single", singleProduct);
 
-export default productRouter;
+router.post("/update-banner", adminAuth, upload.single("image"), updateHeroBanner);
+router.get("/get-banner", getHeroBanner);
+
+export default router;

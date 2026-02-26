@@ -1,127 +1,179 @@
 import { v2 as cloudinary } from "cloudinary";
 import productModel from "../models/productModel.js";
-import bannerModel from "../models/bannerModel.js"; // 👈 దీనిని ఇంపోర్ట్ చేయండి
+import bannerModel from "../models/bannerModel.js";
 
-// 1. కొత్త ప్రొడక్ట్ యాడ్ చేయడం
+/**
+ * 1. Add new product (Admin)
+ */
 export const addProduct = async (req, res) => {
-    try {
-        const { name, description, price, category, subCategory, sizes, bestseller } = req.body;
-        const image1 = req.files.image1 && req.files.image1[0];
+  try {
+    const {
+      name,
+      description,
+      price,
+      category,
+      subCategory,
+      sizes,
+      bestseller
+    } = req.body;
 
-        let result = await cloudinary.uploader.upload(image1.path, { 
-            resource_type: 'image', 
-            timeout: 120000 
-        });
-
-        const productData = {
-            name, description, category,
-            price: Number(price), subCategory,
-            bestseller: bestseller === "true" ? true : false,
-            sizes: JSON.parse(sizes),
-            image: [result.secure_url],
-            date: Date.now()
-        };
-
-        const product = new productModel(productData);
-        await product.save();
-        res.json({ success: true, message: "Product Added Successfully! 👕" });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
+    const image1 = req.files?.image1?.[0];
+    if (!image1) {
+      return res.json({ success: false, message: "Image is required" });
     }
-}
 
-// 2. అన్ని ప్రొడక్ట్స్ ని లిస్ట్ చేయడం
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(image1.path, {
+      resource_type: "image",
+      timeout: 120000
+    });
+
+    const productData = {
+      name,
+      description,
+      category,
+      subCategory,
+      price: Number(price),
+      bestseller: bestseller === "true",
+      sizes: JSON.parse(sizes),
+      image: [result.secure_url],
+
+      // 🔑 IMPORTANT: default visibility for user side
+      inStock: true,
+
+      date: Date.now()
+    };
+
+    const product = new productModel(productData);
+    await product.save();
+
+    res.json({ success: true, message: "Product added successfully" });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * 2. List products (USER SIDE)
+ * Only show products that are in stock
+ */
 export const listProducts = async (req, res) => {
-    try {
-        const products = await productModel.find({});
-        res.json({ success: true, products });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
-    }
-}
+  try {
+    const products = await productModel.find({ inStock: true });
+    res.json({ success: true, products });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
 
-// 3. ప్రొడక్ట్ ని తొలగించడం
+/**
+ * 3. Remove product (Admin)
+ */
 export const removeProduct = async (req, res) => {
-    try {
-        await productModel.findByIdAndDelete(req.body.id);
-        res.json({ success: true, message: "Product Deleted" });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
-    }
-}
+  try {
+    await productModel.findByIdAndDelete(req.body.id);
+    res.json({ success: true, message: "Product deleted successfully" });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
 
-// 4. సింగిల్ ప్రొడక్ట్ వివరాలు
+/**
+ * 4. Get single product details
+ */
 export const singleProduct = async (req, res) => {
-    try {
-        const { productId } = req.query; 
-        const product = await productModel.findById(productId);
-        res.json({ success: true, product });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
-    }
-}
+  try {
+    const { productId } = req.query;
+    const product = await productModel.findById(productId);
+    res.json({ success: true, product });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
 
-// 5. ప్రొడక్ట్ అప్‌డేట్ (Updated with inStock)
+/**
+ * 5. Update product (Admin)
+ */
 export const updateProduct = async (req, res) => {
-    try {
-        const { productId, name, description, price, category, subCategory, bestseller, sizes, inStock } = req.body;
+  try {
+    const {
+      productId,
+      name,
+      description,
+      price,
+      category,
+      subCategory,
+      bestseller,
+      sizes,
+      inStock
+    } = req.body;
 
-        const updateData = {
-            name, 
-            description, 
-            category,
-            price: Number(price), 
-            subCategory,
-            bestseller: bestseller === "true" ? true : false,
-            inStock: inStock === "true" || inStock === true ? true : false, // 👈 ఈ లాజిక్ యాడ్ చేయండి
-            sizes: JSON.parse(sizes),
-            date: Date.now()
-        };
+    const updateData = {
+      name,
+      description,
+      category,
+      subCategory,
+      price: Number(price),
+      bestseller: bestseller === "true" || bestseller === true,
+      inStock: inStock === "true" || inStock === true,
+      sizes: JSON.parse(sizes),
+      date: Date.now()
+    };
 
-        const response = await productModel.findByIdAndUpdate(productId, updateData);
-        
-        if (response) {
-            res.json({ success: true, message: "Product Updated Successfully! ✅" });
-        } else {
-            res.json({ success: false, message: "Product not found!" });
-        }
-    } catch (error) {
-        res.json({ success: false, message: error.message });
+    const response = await productModel.findByIdAndUpdate(
+      productId,
+      updateData,
+      { new: true }
+    );
+
+    if (!response) {
+      return res.json({ success: false, message: "Product not found" });
     }
-}
 
-// --- 🆕 హీరో బ్యానర్ అప్‌డేట్ లాజిక్ ---
+    res.json({ success: true, message: "Product updated successfully" });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
 
-// 6. హీరో బ్యానర్‌ని అప్‌డేట్ చేయడం (Image with Model)
+/**
+ * 6. Update Hero Banner (Admin)
+ */
 export const updateHeroBanner = async (req, res) => {
-    try {
-        const imageFile = req.file; // అడ్మిన్ ప్యానెల్ నుండి వచ్చే ఫైల్
-        if (!imageFile) return res.json({ success: false, message: "No image provided" });
-
-        // క్లౌడినరీకి అప్‌లోడ్ చేయడం
-        const result = await cloudinary.uploader.upload(imageFile.path, { 
-            resource_type: 'image' 
-        });
-
-        // డేటాబేస్‌లో అప్‌డేట్ చేయడం (లేకపోతే కొత్తది క్రియేట్ అవుతుంది)
-        const banner = await bannerModel.findOneAndUpdate(
-            {}, 
-            { image: result.secure_url }, 
-            { upsert: true, new: true }
-        );
-
-        res.json({ success: true, message: "Hero Banner Updated Successfully! 📸", banner });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
+  try {
+    const imageFile = req.file;
+    if (!imageFile) {
+      return res.json({ success: false, message: "No image provided" });
     }
-}
 
-// 7. హోమ్ పేజీ కోసం బ్యానర్ వివరాలను పొందడం
+    const result = await cloudinary.uploader.upload(imageFile.path, {
+      resource_type: "image"
+    });
+
+    const banner = await bannerModel.findOneAndUpdate(
+      {},
+      { image: result.secure_url },
+      { upsert: true, new: true }
+    );
+
+    res.json({
+      success: true,
+      message: "Hero banner updated successfully",
+      banner
+    });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * 7. Get Hero Banner (User side)
+ */
 export const getHeroBanner = async (req, res) => {
-    try {
-        const banner = await bannerModel.findOne({});
-        res.json({ success: true, banner });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
-    }
-}
+  try {
+    const banner = await bannerModel.findOne({});
+    res.json({ success: true, banner });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
