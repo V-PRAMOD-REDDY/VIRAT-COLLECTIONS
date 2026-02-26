@@ -1,7 +1,32 @@
 import React, { useContext, useEffect } from 'react'; 
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { ShopContext } from './context/ShopContext'; 
-// ఇతర ఇంపోర్ట్స్ అన్నీ అలాగే ఉంచండి...
+
+// 👇 ఈ క్రింది ఇంపోర్ట్స్ తప్పనిసరిగా ఉండాలి (ముఖ్యంగా Navbar)
+import Navbar from './components/Navbar'; 
+import Footer from './components/Footer';
+import Home from './pages/public/Home';
+import Shop from './pages/public/Shop';
+import About from './pages/public/About'; 
+import ProductDetail from './pages/public/ProductDetail';
+import Cart from './pages/public/Cart';
+import Login from './pages/public/Login';
+import Profile from './pages/public/Profile'; 
+import OrderTracking from './pages/public/OrderTracking';
+import PlaceOrder from './pages/public/PlaceOrder';
+import Register from './pages/public/Register';
+
+// Protected Pages
+import OrderSuccess from './pages/protected/OrderSuccess';
+import MyOrders from './pages/protected/MyOrders';
+
+// Admin Pages
+import AdminLayout from './pages/admin/AdminLayout';
+import Dashboard from './pages/admin/Dashboard';
+import AddProduct from './pages/admin/AddProduct';
+import ProductList from './pages/admin/ProductList';
+import OrderManagement from './pages/admin/OrderManagement';
+import EditProduct from './pages/admin/EditProduct';
 
 function App() {
   const { token } = useContext(ShopContext); 
@@ -10,7 +35,6 @@ function App() {
   const isAdminRoute = location.pathname.startsWith('/admin');
 
   useEffect(() => {
-    // అడ్మిన్ పేజీలకు టోకెన్ లేకపోతే లాగిన్ కి పంపుతుంది
     if (isAdminRoute && !token) {
       navigate('/login');
     }
@@ -18,6 +42,7 @@ function App() {
 
   return (
     <div className="font-sans text-gray-900 bg-white min-h-screen flex flex-col">
+      {/* Navbar ఇక్కడ పనిచేయాలంటే పైన import అవ్వాలి */}
       {!isAdminRoute && <Navbar />}  
 
       <div className={`flex-1 ${!isAdminRoute ? "pb-24 md:pb-0" : ""}`}>
@@ -38,7 +63,7 @@ function App() {
           <Route path="/orders" element={<MyOrders />} />
           <Route path="/order-success" element={<OrderSuccess />} />
 
-          {/* Admin Routes - Token ఉంటేనే కనిపిస్తాయి */}
+          {/* Admin Routes */}
           {token && (
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<Dashboard />} /> 
