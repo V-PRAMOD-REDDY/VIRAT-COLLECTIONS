@@ -2,9 +2,11 @@ import React, { useContext, useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { ShopContext } from './context/ShopContext'; 
 
-// 👇 ఈ క్రింది ఇంపోర్ట్స్ తప్పనిసరిగా ఉండాలి (ముఖ్యంగా Navbar)
+// Common Components
 import Navbar from './components/Navbar'; 
 import Footer from './components/Footer';
+
+// Public Pages
 import Home from './pages/public/Home';
 import Shop from './pages/public/Shop';
 import About from './pages/public/About'; 
@@ -27,13 +29,16 @@ import AddProduct from './pages/admin/AddProduct';
 import ProductList from './pages/admin/ProductList';
 import OrderManagement from './pages/admin/OrderManagement';
 import EditProduct from './pages/admin/EditProduct';
+import UpdateBanner from './pages/admin/UpdateBanner'; // ✅ IMPORTANT
 
 function App() {
   const { token } = useContext(ShopContext); 
   const location = useLocation();
   const navigate = useNavigate();
+
   const isAdminRoute = location.pathname.startsWith('/admin');
 
+  // 🔐 Admin route protection
   useEffect(() => {
     if (isAdminRoute && !token) {
       navigate('/login');
@@ -42,41 +47,46 @@ function App() {
 
   return (
     <div className="font-sans text-gray-900 bg-white min-h-screen flex flex-col">
-      {/* Navbar ఇక్కడ పనిచేయాలంటే పైన import అవ్వాలి */}
+      
+      {/* Navbar only for public pages */}
       {!isAdminRoute && <Navbar />}  
 
       <div className={`flex-1 ${!isAdminRoute ? "pb-24 md:pb-0" : ""}`}>
         <Routes>
-          {/* Public Routes */}
+
+          {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:productId" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<Login />} />
-          <Route path='/register' element={<Register />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path='/track-order' element={<OrderTracking />} />
+          <Route path="/track-order" element={<OrderTracking />} />
           <Route path="/place-order" element={<PlaceOrder />} />
 
-          {/* Protected Routes */}
+          {/* ================= PROTECTED USER ROUTES ================= */}
           <Route path="/orders" element={<MyOrders />} />
           <Route path="/order-success" element={<OrderSuccess />} />
 
-          {/* Admin Routes */}
+          {/* ================= ADMIN ROUTES ================= */}
           {token && (
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Dashboard />} /> 
+              <Route index element={<Dashboard />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="add-product" element={<AddProduct />} />
               <Route path="products" element={<ProductList />} />
               <Route path="orders" element={<OrderManagement />} />
               <Route path="edit-product/:id" element={<EditProduct />} />
+              <Route path="update-banner" element={<UpdateBanner />} /> {/* ✅ FIX */}
             </Route>
           )}
+
         </Routes>
       </div>
 
+      {/* Footer only for public pages */}
       {!isAdminRoute && <Footer />} 
     </div>
   );
