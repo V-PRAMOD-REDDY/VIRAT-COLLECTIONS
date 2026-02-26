@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { assets } from '../../assets/assets'; 
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { ShopContext } from '../../context/ShopContext';
 
 const AddProduct = () => {
   const [image1, setImage1] = useState(false);
@@ -14,11 +15,17 @@ const AddProduct = () => {
   const [offer, setOffer] = useState(false); 
   const [sizes, setSizes] = useState([]);
 
-  // ఇక్కడ నేరుగా మీ Render Backend URL ఇవ్వండి (VITE_BACKEND_URL ఎర్రర్ రాకుండా)
-  const backendUrl = "https://virat-collections.onrender.com";
+  // ShopContext నుండి టోకెన్ మరియు బ్యాకెండ్ URL తీసుకుంటున్నాము
+  const { token, backendUrl } = useContext(ShopContext);
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+
+    if (!token) {
+      toast.error("Admin not authenticated! Please login.");
+      return;
+    }
+
     const loadToast = toast.loading("Adding Product... Please wait.");
 
     try {
@@ -32,27 +39,34 @@ const AddProduct = () => {
       formData.append("offer", offer); 
       formData.append("sizes", JSON.stringify(sizes));
       
-      // ఇమేజ్ ఉంటేనే యాడ్ చేస్తుంది
+      // ఇమేజ్ ఉందో లేదో చెక్ చేస్తున్నాము
       if (image1) {
         formData.append("image1", image1);
       } else {
-        toast.update(loadToast, { render: "Please upload an image!", type: "error", isLoading: false, autoClose: 3000 });
+        toast.update(loadToast, { render: "Please upload a product image!", type: "error", isLoading: false, autoClose: 3000 });
         return;
       }
 
-      // API రిక్వెస్ట్ పంపుతున్నాము
-      const response = await axios.post(`${backendUrl}/api/product/add`, formData);
+      // API రిక్వెస్ట్ - Headers లో టోకెన్ పంపడం ముఖ్యం
+      const response = await axios.post(`${backendUrl}/api/product/add`, formData, { headers: { token } });
 
       if (response.data.success) {
-        toast.update(loadToast, { render: response.data.message, type: "success", isLoading: false, autoClose: 3000 });
+        toast.update(loadToast, { render: "Product Added Successfully! 🎉", type: "success", isLoading: false, autoClose: 3000 });
         // ఫామ్ రీసెట్ చేయడం
-        setName(''); setDescription(''); setImage1(false); setPrice(''); setSizes([]); setBestseller(false); setOffer(false);
+        setName(''); 
+        setDescription(''); 
+        setImage1(false); 
+        setPrice(''); 
+        setSizes([]); 
+        setBestseller(false); 
+        setOffer(false);
       } else {
         toast.update(loadToast, { render: response.data.message, type: "error", isLoading: false, autoClose: 3000 });
       }
     } catch (error) {
-      console.error(error);
-      toast.update(loadToast, { render: "Server Error! Check your internet or backend connection.", type: "error", isLoading: false, autoClose: 3000 });
+      console.error("Error Status:", error.response?.status);
+      console.error("Error Detail:", error.response?.data);
+      toast.update(loadToast, { render: error.response?.data?.message || "Server Error! Check if backend is running.", type: "error", isLoading: false, autoClose: 3000 });
     }
   }
 
