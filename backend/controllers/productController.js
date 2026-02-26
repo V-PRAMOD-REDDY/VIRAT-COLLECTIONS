@@ -38,7 +38,7 @@ export const addProduct = async (req, res) => {
       sizes: JSON.parse(sizes),
       image: [result.secure_url],
 
-      // 🔑 IMPORTANT: default visibility for user side
+      // Default visibility for user side
       inStock: true,
 
       date: Date.now()
@@ -55,11 +55,19 @@ export const addProduct = async (req, res) => {
 
 /**
  * 2. List products (USER SIDE)
- * Only show products that are in stock
+ * Show:
+ * - products with inStock: true
+ * - old products where inStock field does not exist
  */
 export const listProducts = async (req, res) => {
   try {
-    const products = await productModel.find({ inStock: true });
+    const products = await productModel.find({
+      $or: [
+        { inStock: true },
+        { inStock: { $exists: false } } // 🔥 FIX FOR OLD PRODUCTS
+      ]
+    });
+
     res.json({ success: true, products });
   } catch (error) {
     res.json({ success: false, message: error.message });
