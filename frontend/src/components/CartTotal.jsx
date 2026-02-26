@@ -1,38 +1,42 @@
 import React, { useContext } from 'react';
 import { ShopContext } from '../context/ShopContext';
+import Title from './Title'; // Title కాంపోనెంట్ ఉంటే ఇది వాడండి, లేదంటే నేరుగా <h2> వాడవచ్చు
 
 const CartTotal = () => {
   const { currency, delivery_fee, getCartAmount } = useContext(ShopContext);
 
-  // ✅ SAFE GUARD
-  const subtotal = typeof getCartAmount === 'function'
-    ? Number(getCartAmount()) || 0
-    : 0;
-
+  // అమౌంట్ క్యాలిక్యులేషన్
+  const subtotal = getCartAmount();
   const shipping = subtotal > 1999 || subtotal === 0 ? 0 : Number(delivery_fee);
   const total = subtotal + shipping;
 
   return (
     <div className='w-full'>
-      <div className='text-2xl font-bold uppercase'>
+      {/* మునుపటిలాగే Black Bold Title */}
+      <div className='text-2xl font-black uppercase tracking-tighter italic border-b-4 border-black inline-block mb-6'>
         <h2>Cart Totals</h2>
       </div>
 
-      <div className='flex flex-col gap-2 mt-2 text-sm'>
-        <div className='flex justify-between'>
-          <p>Subtotal</p>
-          <p>{currency} {subtotal.toLocaleString()}.00</p>
+      <div className='flex flex-col gap-3 mt-2 text-sm'>
+        {/* Subtotal Section */}
+        <div className='flex justify-between items-center'>
+          <p className='text-gray-500 font-bold uppercase tracking-widest text-xs'>Subtotal</p>
+          <p className='font-black text-gray-900'>{currency} {subtotal.toLocaleString()}.00</p>
         </div>
-        <hr />
-        <div className='flex justify-between'>
-          <p>Shipping Fee</p>
-          <p className={shipping === 0 ? 'text-green-600 font-bold' : ''}>
-            {currency} {shipping}.00
+        <hr className='border-gray-100' />
+
+        {/* Shipping Section */}
+        <div className='flex justify-between items-center'>
+          <p className='text-gray-500 font-bold uppercase tracking-widest text-xs'>Shipping Fee</p>
+          <p className={`font-black ${shipping === 0 ? 'text-green-600' : 'text-gray-900'}`}>
+            {shipping === 0 ? 'FREE' : `${currency} ${shipping}.00`}
           </p>
         </div>
-        <hr />
-        <div className='flex justify-between font-bold text-lg'>
-          <p>Total</p>
+        <hr className='border-gray-100' />
+
+        {/* Total Section - Highlighted */}
+        <div className='flex justify-between items-center font-black text-xl text-gray-900 mt-2'>
+          <p className='uppercase tracking-tighter italic'>Total</p>
           <p>{currency} {total.toLocaleString()}.00</p>
         </div>
       </div>
