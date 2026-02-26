@@ -7,6 +7,7 @@ const UpdateBanner = () => {
   const [image, setImage] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ ADMIN SIDE: hardcode / env based
   const backendUrl = "https://virat-collections.onrender.com";
   const token = localStorage.getItem("token");
 
@@ -73,7 +74,12 @@ const UpdateBanner = () => {
             src={image ? URL.createObjectURL(image) : assets.upload_area}
             className="w-full h-64 object-cover border-2 border-dashed rounded-xl"
           />
-          <input type="file" hidden onChange={(e) => setImage(e.target.files[0])} />
+          <input
+            type="file"
+            hidden
+            accept="image/*"
+            onChange={(e) => setImage(e.target.files[0])}
+          />
         </label>
 
         <button

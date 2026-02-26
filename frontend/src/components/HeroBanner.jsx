@@ -10,7 +10,7 @@ const HeroBanner = () => {
   
   // ShopContext నుండి backendUrl తీసుకోవడం ద్వారా డైనమిక్ కనెక్షన్ కుదురుతుంది
   const { backendUrl } = useContext(ShopContext); 
-  const apiUrl = backendUrl || "http://localhost:4000"; 
+  const apiUrl = backendUrl || "https://virat-collections.onrender.com"; 
 
   const fetchBanner = async () => {
     try {
