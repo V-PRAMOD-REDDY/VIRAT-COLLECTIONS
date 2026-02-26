@@ -17,19 +17,12 @@ const ShopProvider = ({ children }) => {
   const getProductsData = async () => {
     try {
       const res = await axios.get(`${backendUrl}/api/product/list`);
-      if (res.data.success) {
-        setProducts(res.data.products);
-      }
-    } catch (err) {
-      console.error("PRODUCT FETCH ERROR ❌", err);
-    }
+      if (res.data.success) setProducts(res.data.products);
+    } catch (err) { console.error("PRODUCT FETCH ERROR ❌", err); }
   };
 
   const addToCart = async (itemId, size) => {
-    if (!size) {
-      toast.error("Please Select Size First!");
-      return;
-    }
+    if (!size) { toast.error("Please Select Size!"); return; }
     let cartData = structuredClone(cartItems);
     if (cartData[itemId]) {
       if (cartData[itemId][size]) cartData[itemId][size] += 1;
@@ -40,10 +33,8 @@ const ShopProvider = ({ children }) => {
     }
     setCartItems(cartData);
     if (token) {
-      try {
-        await axios.post(`${backendUrl}/api/cart/add`, { itemId, size }, { headers: { token } });
-        toast.success("Added to Bag!");
-      } catch (error) { toast.error(error.message); }
+      try { await axios.post(`${backendUrl}/api/cart/add`, { itemId, size }, { headers: { token } }); } 
+      catch (error) { toast.error(error.message); }
     }
   };
 
@@ -52,15 +43,26 @@ const ShopProvider = ({ children }) => {
     if (quantity === 0) {
       delete cartData[itemId][size];
       if (Object.keys(cartData[itemId]).length === 0) delete cartData[itemId];
-    } else {
-      cartData[itemId][size] = quantity;
-    }
+    } else { cartData[itemId][size] = quantity; }
     setCartItems(cartData);
     if (token) {
-      try {
-        await axios.post(`${backendUrl}/api/cart/update`, { itemId, size, quantity }, { headers: { token } });
-      } catch (error) { toast.error(error.message); }
+      try { await axios.post(`${backendUrl}/api/cart/update`, { itemId, size, quantity }, { headers: { token } }); } 
+      catch (error) { toast.error(error.message); }
     }
+  };
+
+  const getCartAmount = () => {
+    let totalAmount = 0;
+    for (const items in cartItems) {
+      let itemInfo = products.find((product) => product._id === items);
+      if (!itemInfo) continue;
+      for (const size in cartItems[items]) {
+        if (cartItems[items][size] > 0) {
+          totalAmount += itemInfo.price * cartItems[items][size];
+        }
+      }
+    }
+    return totalAmount;
   };
 
   const getCartCount = () => {
@@ -73,40 +75,20 @@ const ShopProvider = ({ children }) => {
     return totalCount;
   };
 
-  const getCartAmount = () => {
-    let totalAmount = 0;
-    for (const items in cartItems) {
-      let itemInfo = products.find((product) => product._id === items);
-      if (!itemInfo) continue;
-      for (const size in cartItems[items]) {
-        if (cartItems[items][size] > 0) totalAmount += itemInfo.price * cartItems[items][size];
-      }
-    }
-    return totalAmount;
-  };
-
   useEffect(() => { getProductsData(); }, []);
 
   useEffect(() => {
     if (token) localStorage.setItem("token", token);
-    else {
-      localStorage.removeItem("token");
-      setCartItems({});
-    }
+    else { localStorage.removeItem("token"); setCartItems({}); }
   }, [token]);
 
-  // అన్ని ఫంక్షన్లను ఇక్కడ ఎగుమతి చేయడం ముఖ్యం
   const value = {
     products, currency, delivery_fee, cartItems, setCartItems, 
     addToCart, getCartCount, updateQuantity, getCartAmount,
     token, setToken, backendUrl, search, setSearch, getProductsData
   };
 
-  return (
-    <ShopContext.Provider value={value}>
-      {children}
-    </ShopContext.Provider>
-  );
+  return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 };
 
 export default ShopProvider;
