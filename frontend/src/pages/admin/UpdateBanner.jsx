@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { assets } from '../../assets/assets';
+import { ShopContext } from '../../context/ShopContext';
 
-const UpdateBanner = ({ token }) => {
+const UpdateBanner = () => {
     const [image, setImage] = useState(false);
     const [loading, setLoading] = useState(false);
+    
+    // ShopContext నుండి backendUrl మరియు token తీసుకుంటున్నాము
+    const { backendUrl, token } = useContext(ShopContext);
 
     const onSubmitHandler = async (e) => {
         e.preventDefault();
-        console.log("Submit button clicked!"); // బటన్ పనిచేస్తుందో లేదో తెలుస్తుంది
 
+        // సెక్యూరిటీ చెక్: టోకెన్ లేకపోతే రిక్వెస్ట్ పంపదు
         if (!token) {
-            console.log("Token missing!");
             return toast.error("Admin token missing! Please login again.");
         }
 
@@ -21,13 +24,15 @@ const UpdateBanner = ({ token }) => {
         }
 
         setLoading(true);
+        const loadToast = toast.loading("Uploading Hero Banner...");
+
         try {
             const formData = new FormData();
             formData.append("image", image); 
 
-            console.log("Sending request to backend...");
+            // localhost స్థానంలో డైనమిక్ backendUrl వాడుతున్నాము
             const response = await axios.post(
-                "http://localhost:4000/api/product/update-banner", 
+                `${backendUrl}/api/product/update-banner`, 
                 formData, 
                 { 
                     headers: { 
@@ -37,19 +42,35 @@ const UpdateBanner = ({ token }) => {
                 }
             );
 
-            console.log("Server Response:", response.data);
-
             if (response.data.success) {
-                toast.success("Hero Banner Updated Successfully! 📸");
+                toast.update(loadToast, { 
+                    render: "Hero Banner Updated Successfully! 📸", 
+                    type: "success", 
+                    isLoading: false, 
+                    autoClose: 3000 
+                });
                 setImage(false);
-                // సక్సెస్ అయ్యాక పేజీని రిఫ్రెష్ చేయడానికి:
-                window.location.reload(); 
+                
+                // సక్సెస్ అయ్యాక మార్పులు కనిపించడానికి చిన్న డిలే తర్వాత రిఫ్రెష్
+                setTimeout(() => {
+                    window.location.reload(); 
+                }, 2000);
             } else {
-                toast.error(response.data.message);
+                toast.update(loadToast, { 
+                    render: response.data.message, 
+                    type: "error", 
+                    isLoading: false, 
+                    autoClose: 3000 
+                });
             }
         } catch (error) {
-            console.error("Upload Error Detail:", error);
-            toast.error(error.response?.data?.message || "Server connection failed!");
+            console.error("Upload Error:", error);
+            toast.update(loadToast, { 
+                render: error.response?.data?.message || "Server connection failed!", 
+                type: "error", 
+                isLoading: false, 
+                autoClose: 3000 
+            });
         } finally {
             setLoading(false);
         }
@@ -57,18 +78,22 @@ const UpdateBanner = ({ token }) => {
 
     return (
         <div className='p-8'>
-            <form onSubmit={onSubmitHandler} className='flex flex-col w-full items-start gap-3 bg-white p-8 rounded-2xl shadow-sm border border-gray-100'>
-                <h2 className='text-xl font-black uppercase mb-2 text-blue-600'>Update Hero Banner Image</h2>
-                <p className='text-gray-400 text-xs font-bold uppercase tracking-widest'>Select Model Image (Desktop Style)</p>
+            <form onSubmit={onSubmitHandler} className='flex flex-col w-full items-start gap-3 bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 max-w-2xl'>
+                <h2 className='text-2xl font-black uppercase mb-2 text-blue-600 italic tracking-tighter'>Update Hero Banner</h2>
+                <p className='text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]'>Desktop Model Image (Best Ratio 16:9)</p>
                 
-                <label htmlFor="banner-image" className='cursor-pointer'>
-                    <div className='relative'>
+                <label htmlFor="banner-image" className='cursor-pointer w-full'>
+                    <div className='relative group'>
                         <img 
-                            className='w-80 h-48 object-cover border-2 border-dashed border-gray-200 p-2 rounded-2xl hover:border-black transition-all shadow-sm' 
+                            className='w-full h-64 object-cover border-2 border-dashed border-gray-200 p-2 rounded-2xl group-hover:border-blue-600 transition-all shadow-sm' 
                             src={image ? URL.createObjectURL(image) : assets.upload_area} 
                             alt="Upload Preview" 
                         />
-                        {!image && <p className='absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-400'>CLICK TO UPLOAD</p>}
+                        {!image && (
+                            <div className='absolute inset-0 flex flex-col items-center justify-center bg-gray-50/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl'>
+                                <p className='text-xs font-black text-blue-600 uppercase tracking-widest'>Click to Select Image</p>
+                            </div>
+                        )}
                     </div>
                     <input 
                         onChange={(e) => setImage(e.target.files[0])} 
@@ -82,9 +107,9 @@ const UpdateBanner = ({ token }) => {
                 <button 
                     type="submit" 
                     disabled={loading} 
-                    className='w-48 py-3 bg-blue-600 text-white rounded-xl font-black uppercase tracking-widest hover:bg-black transition-all active:scale-95 disabled:bg-gray-400 shadow-lg mt-4'
+                    className='w-full md:w-64 py-4 bg-black text-white rounded-2xl font-black uppercase tracking-widest hover:bg-blue-600 transition-all active:scale-95 disabled:bg-gray-400 shadow-2xl mt-4'
                 >
-                    {loading ? 'Uploading...' : 'UPDATE BANNER'}
+                    {loading ? 'UPLOADING...' : 'UPDATE BANNER'}
                 </button>
             </form>
         </div>
