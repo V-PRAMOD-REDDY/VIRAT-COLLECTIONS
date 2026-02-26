@@ -23,9 +23,10 @@ const EditProduct = () => {
     // ప్రొడక్ట్ డేటాను సర్వర్ నుండి తీసుకురావడం
     useEffect(() => {
         const fetchProductData = async () => {
+            if (!id || !backendUrl) return; 
             try {
                 setLoading(true);
-                // backendUrl ని ఉపయోగిస్తున్నాము
+                // backendUrl ని ఉపయోగించి సింగిల్ ప్రొడక్ట్ డేటా తెస్తున్నాము
                 const response = await axios.get(`${backendUrl}/api/product/single?productId=${id}`);
                 if (response.data.success) {
                     const data = response.data.product;
@@ -34,17 +35,17 @@ const EditProduct = () => {
                     setPrice(data.price);
                     setCategory(data.category);
                     setSubCategory(data.subCategory);
-                    setSizes(data.sizes);
+                    setSizes(data.sizes || []);
                     setInStock(data.inStock !== undefined ? data.inStock : true);
                 }
             } catch (error) {
-                console.error(error);
+                console.error("Fetch Error:", error);
                 toast.error("Failed to load product data!");
             } finally {
                 setLoading(false);
             }
         };
-        if (backendUrl) fetchProductData();
+        fetchProductData();
     }, [id, backendUrl]);
 
     const onSubmitHandler = async (e) => {
@@ -70,7 +71,7 @@ const EditProduct = () => {
                 bestseller: "false" 
             };
 
-            // Headers లో token పంపడం ముఖ్యం
+            // Headers లో token పంపడం ద్వారా సెక్యూరిటీని నిర్ధారిస్తున్నాము
             const response = await axios.post(`${backendUrl}/api/product/update`, updateData, { headers: { token } });
 
             if (response.data.success) {
@@ -87,7 +88,7 @@ const EditProduct = () => {
 
     if (loading) return (
         <div className='p-8 flex items-center justify-center min-h-[400px]'>
-            <div className='font-black animate-pulse text-xl uppercase tracking-tighter'>Loading Product Data...</div>
+            <div className='font-black animate-pulse text-xl uppercase tracking-tighter text-gray-400'>Loading Product Data...</div>
         </div>
     );
 
