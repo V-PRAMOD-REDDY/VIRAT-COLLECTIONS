@@ -20,16 +20,28 @@ const ProductDetail = () => {
   useEffect(() => { fetchProductData(); }, [productId, products]);
 
   const toggleSize = (size) => {
-    if (selectedSizes.includes(size)) setSelectedSizes(prev => prev.filter(i => i !== size));
-    else setSelectedSizes(prev => [...prev, size]);
+    if (selectedSizes.includes(size)) {
+      setSelectedSizes(prev => prev.filter(i => i !== size));
+    } else {
+      setSelectedSizes(prev => [...prev, size]);
+    }
   }
 
   const handleAction = async (isBuyNow) => {
     if (!token) { toast.error("Please Login!"); navigate('/login'); return; }
-    if (selectedSizes.length === 0) { toast.error("Please Select Size!"); return; }
-    for (const size of selectedSizes) { await addToCart(productData._id, size); }
-    if (isBuyNow) navigate('/cart');
-    else { toast.success("Added to Bag! 🛍️"); setSelectedSizes([]); }
+    if (selectedSizes.length === 0) { toast.error("Please Select at least one Size!"); return; }
+    
+    // ✅ సెలెక్ట్ చేసిన ప్రతి సైజును కార్ట్ లో యాడ్ చేయడం
+    for (const size of selectedSizes) {
+      await addToCart(productData._id, size);
+    }
+    
+    if (isBuyNow) {
+      navigate('/cart');
+    } else {
+      toast.success(`${selectedSizes.length} items added to Bag! 🛍️`);
+      setSelectedSizes([]); 
+    }
   }
 
   return productData ? (
@@ -47,27 +59,35 @@ const ProductDetail = () => {
         </div>
 
         <div className='flex-1'>
-          <h1 className='font-black text-3xl md:text-4xl mt-2 uppercase text-gray-900'>{productData.name}</h1>
+          <p className='text-xs font-bold text-blue-600 uppercase tracking-[0.3em] mb-2'>{productData.category}</p>
+          <h1 className='font-black text-3xl md:text-4xl mt-2 uppercase tracking-tight text-gray-900 leading-tight'>{productData.name}</h1>
           <p className='mt-8 text-4xl font-black text-black'>{currency}{Number(productData.price).toLocaleString('en-IN')}</p>
-          <p className='mt-6 text-gray-500 md:w-4/5 text-sm'>{productData.description}</p>
+          <p className='mt-6 text-gray-500 md:w-4/5 text-sm font-medium'>{productData.description}</p>
           
           <div className='flex flex-col gap-4 my-8'>
-            <p className='font-black uppercase text-[10px] tracking-[0.2em] text-gray-400'>Select Sizes</p>
+            <p className='font-black uppercase text-[10px] tracking-[0.2em] text-gray-400'>Select Sizes (Multi-selection)</p>
             <div className='flex gap-3 flex-wrap'>
               {productData.sizes.map((item, index) => (
-                <button key={index} onClick={() => toggleSize(item)} className={`w-14 h-14 border-2 rounded-2xl font-black transition-all ${selectedSizes.includes(item) ? 'border-black bg-black text-white scale-110 shadow-xl' : 'bg-gray-50 border-gray-100'}`}>{item}</button>
+                <button 
+                  key={index} 
+                  onClick={() => toggleSize(item)} 
+                  className={`w-14 h-14 border-2 rounded-2xl font-black transition-all ${selectedSizes.includes(item) ? 'border-black bg-black text-white scale-110 shadow-xl' : 'bg-gray-50 border-gray-100 hover:border-gray-300'}`}
+                >
+                  {item}
+                </button>
               ))}
             </div>
           </div>
 
           <div className='flex flex-col sm:flex-row gap-4 w-full md:w-4/5 mt-10'>
             <button onClick={() => handleAction(false)} className='flex-1 bg-white text-black border-2 border-black px-8 py-5 text-xs font-black rounded-2xl shadow-sm hover:bg-black hover:text-white transition-all uppercase'>Add to Bag</button>
+            {/* BUY NOW - Updated to Orange Color */}
             <button onClick={() => handleAction(true)} className='flex-1 bg-orange-600 text-white px-8 py-5 text-xs font-black rounded-2xl shadow-xl hover:bg-orange-700 transition-all uppercase'>Buy Now</button>
           </div>
         </div>
       </div>
     </div>
-  ) : <div className='h-screen flex items-center justify-center font-black animate-pulse'>Loading...</div>
+  ) : <div className='h-screen flex items-center justify-center font-black animate-pulse uppercase tracking-widest text-gray-400'>Loading...</div>
 }
 
 export default ProductDetail;
