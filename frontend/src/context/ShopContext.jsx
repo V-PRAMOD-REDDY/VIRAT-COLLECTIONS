@@ -12,9 +12,16 @@ const ShopProvider = ({ children }) => {
 
   const currency = '₹';
   const delivery_fee = 50;
-  // లైవ్ బ్యాకెండ్ URL
-  const backendUrl = "https://virat-collections.onrender.com";
 
+  // ✅ LIVE BACKEND
+  const backendUrl = 'https://virat-collections.onrender.com';
+
+  // ✅ GET CART COUNT (🔥 FIXED)
+  const getCartCount = () => {
+    return cart.reduce((total, item) => total + (item.quantity || 1), 0);
+  };
+
+  // ✅ FETCH PRODUCTS
   const getProductsData = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/product/list`);
@@ -24,12 +31,10 @@ const ShopProvider = ({ children }) => {
         toast.error(response.data.message);
       }
     } catch (error) {
-      console.log(error);
-      toast.error("Database connection failed!");
+      console.error(error);
+      toast.error('Database connection failed!');
     }
-  }
-
-  // ఇతర ఫంక్షన్లు (addToCart, updateQuantity, etc.) మీ పాత కోడ్ లాగే ఉంచండి...
+  };
 
   useEffect(() => {
     getProductsData();
@@ -44,11 +49,19 @@ const ShopProvider = ({ children }) => {
     }
   }, [token]);
 
+  // ✅ CONTEXT VALUE (🔥 getCartCount added)
   const value = {
-    products, currency, delivery_fee,
-    cart, setCart, token, setToken, 
-    backendUrl, search, setSearch 
-    // పైన backendUrl ఖచ్చితంగా ఉండాలి
+    products,
+    currency,
+    delivery_fee,
+    cart,
+    setCart,
+    token,
+    setToken,
+    backendUrl,
+    search,
+    setSearch,
+    getCartCount
   };
 
   return (
