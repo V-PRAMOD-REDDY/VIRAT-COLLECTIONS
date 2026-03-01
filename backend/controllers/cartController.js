@@ -1,24 +1,39 @@
 import userModel from "../models/userModel.js";
 
-// 1. కార్ట్‌కి వస్తువులను యాడ్ చేయడం
+// 1. Add items to cart
 export const addToCart = async (req, res) => {
     try {
-        const { userId, itemId, size } = req.body;
+        const userId = req.userId || req.user?._id;
+        const { itemId, size } = req.body;
 
-        // యూజర్ ఐడి ఉందో లేదో ప్రాథమిక తనిఖీ
+        // Validate authentication
         if (!userId) {
-            return res.json({ success: false, message: "User ID is required" });
+            return res.status(401).json({ 
+                success: false, 
+                message: "User not authenticated" 
+            });
+        }
+
+        // Validate required fields
+        if (!itemId || !size) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Product ID and size are required" 
+            });
         }
 
         const userData = await userModel.findById(userId);
         
-        // --- 👈 ఎర్రర్ ఫిక్స్: యూజర్ దొరకకపోతే null pointer రాకుండా ఆపుతుంది ---
         if (!userData) {
-            return res.json({ success: false, message: "User not found! Please login again." });
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found. Please login again." 
+            });
         }
 
-        let cartData = await userData.cartData || {};
+        let cartData = userData.cartData || {};
 
+        // Add or update cart item
         if (cartData[itemId]) {
             if (cartData[itemId][size]) {
                 cartData[itemId][size] += 1;
@@ -31,58 +46,130 @@ export const addToCart = async (req, res) => {
         }
 
         await userModel.findByIdAndUpdate(userId, { cartData });
-        res.json({ success: true, message: "Added To Cart ✅" });
+        
+        res.status(200).json({ 
+            success: true, 
+            message: "Item added to cart successfully ✅" 
+        });
 
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+        console.error('Add to Cart Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to add item to cart" 
+        });
     }
 }
 
-// 2. కార్ట్ డేటాను అప్‌డేట్ చేయడం
+// 2. Update cart quantity
 export const updateCart = async (req, res) => {
     try {
-        const { userId, itemId, size, quantity } = req.body;
+        const userId = req.userId || req.user?._id;
+        const { itemId, size, quantity } = req.body;
+
+        // Validate authentication
+        if (!userId) {
+            return res.status(401).json({ 
+                success: false, 
+                message: "User not authenticated" 
+            });
+        }
+
+        // Validate required fields
+        if (!itemId || !size || quantity === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Product ID, size, and quantity are required" 
+            });
+        }
+
+        // Validate quantity
+        if (quantity < 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Quantity cannot be negative" 
+            });
+        }
 
         const userData = await userModel.findById(userId);
         
         if (!userData) {
-            return res.json({ success: false, message: "User not found!" });
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found. Please login again." 
+            });
         }
 
-        let cartData = await userData.cartData || {};
+        let cartData = userData.cartData || {};
 
-        // వస్తువు మరియు సైజు ఉంటేనే క్వాంటిటీ మార్చాలి
-        if (cartData[itemId]) {
+        // Update or remove item based on quantity
+        if (quantity === 0) {
+            // Remove item completely
+            if (cartData[itemId]) {
+                delete cartData[itemId][size];
+                // If no sizes left for this item, remove the item entirely
+                if (Object.keys(cartData[itemId]).length === 0) {
+                    delete cartData[itemId];
+                }
+            }
+        } else {
+            // Update quantity
+            if (!cartData[itemId]) {
+                cartData[itemId] = {};
+            }
             cartData[itemId][size] = quantity;
         }
 
         await userModel.findByIdAndUpdate(userId, { cartData });
-        res.json({ success: true, message: "Cart Updated" });
+        
+        res.status(200).json({ 
+            success: true, 
+            message: "Cart updated successfully ✅" 
+        });
 
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+        console.error('Update Cart Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to update cart" 
+        });
     }
 }
 
-// 3. యూజర్ కార్ట్ డేటాను పొందడం
+// 3. Get user cart data
 export const getUserCart = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const userId = req.userId || req.user?._id;
 
-        const userData = await userModel.findById(userId);
-
-        if (!userData) {
-            return res.json({ success: false, message: "User not found!" });
+        if (!userId) {
+            return res.status(401).json({ 
+                success: false, 
+                message: "User not authenticated" 
+            });
         }
 
-        let cartData = await userData.cartData || {};
+        const userData = await userModel.findById(userId);
+        
+        if (!userData) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
+        }
 
-        res.json({ success: true, cartData });
-
+        const cartData = userData.cartData || {};
+        
+        res.status(200).json({ 
+            success: true, 
+            cartData,
+            message: "Cart data retrieved successfully" 
+        });
+        
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+        console.error('Get Cart Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to retrieve cart data" 
+        });
     }
 }

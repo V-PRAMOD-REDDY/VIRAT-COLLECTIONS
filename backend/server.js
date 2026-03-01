@@ -7,6 +7,7 @@ import productRouter from './routes/productRoutes.js';
 import userRouter from "./routes/userRoute.js";
 import orderRouter from './routes/orderRoutes.js';
 import cartRouter from './routes/cartRoutes.js';
+import paymentRouter from './routes/paymentRoutes.js';
 
 
 // 1. ముందుగా app ని క్రియేట్ చేయాలి
@@ -26,6 +27,7 @@ app.use('/api/product', productRouter);
 app.use('/api/user', userRouter); 
 app.use('/api/order', orderRouter);
 app.use('/api/cart', cartRouter); 
+app.use('/api/payment', paymentRouter); 
 
 app.get('/', (req, res) => {
     res.send("API Working! 🚀 Virat-DB is Live.");

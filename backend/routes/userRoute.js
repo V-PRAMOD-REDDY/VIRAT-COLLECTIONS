@@ -1,15 +1,18 @@
 import express from "express";
-import { loginUser, registerUser, getUserProfile, updateProfile, adminLogin, googleLogin } from "../controllers/userController.js";
+import { registerUser, loginUser, adminLogin } from "../controllers/authController.js";
+import { getUserProfile, updateProfile, googleLogin } from "../controllers/userController.js";
 import authUser from "../middleware/authMiddleware.js";
 
 const userRouter = express.Router();
 
+// Authentication routes - using authController
 userRouter.post('/register', registerUser);
 userRouter.post('/login', loginUser);
 userRouter.post('/admin', adminLogin);
-userRouter.post('/google-login', googleLogin);
 
-userRouter.post('/update-profile', authUser, updateProfile);
-userRouter.post('/get-profile', authUser, getUserProfile);
+// User management routes - using userController
+userRouter.post('/google-login', googleLogin);
+userRouter.get('/profile', authUser, getUserProfile);
+userRouter.put('/profile', authUser, updateProfile);
 
 export default userRouter;

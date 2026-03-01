@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import Title from "../../components/Title";
 import CartTotal from "../../components/CartTotal";
+import { initiatePhonePePayment } from "../../utils/loadPhonePe";
 
 const PlaceOrder = () => {
   const {
@@ -23,6 +24,7 @@ const PlaceOrder = () => {
     firstName: '', lastName: '', email: '', street: '',
     city: '', state: '', zipcode: '', country: '', phone: ''
   });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const onChangeHandler = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -54,23 +56,48 @@ const PlaceOrder = () => {
     };
 
     try {
+      setIsProcessing(true);
+      
       if (method === 'cod') {
-        // COD ఆర్డర్ లాజిక్
+        // COD Order Logic
         const res = await axios.post(`${backendUrl}/api/order/place`, orderData, { headers: { token } });
         if (res.data.success) {
           setCartItems({});
           toast.success("Order Placed (COD) 🎉");
-          navigate('/orders');
+          navigate('/order-success');
         } else {
           toast.error(res.data.message);
         }
-      } else if (method === 'razorpay') {
-        // ఇక్కడ మీ Razorpay ఫంక్షనాలిటీని పిలవాలి
-        toast.info("Razorpay Payment Gateway loading...");
-        // API call for online payment goes here
+      } else if (method === 'phonepe') {
+        // PhonePe Payment Logic
+        toast.info("Redirecting to PhonePe...");
+        
+        // Step 1: Create PhonePe payment order on backend
+        const phonePeOrderRes = await axios.post(`${backendUrl}/api/payment/phonepe`, {
+          amount: orderData.amount,
+          currency: 'INR'
+        }, { headers: { token } });
+
+        if (!phonePeOrderRes.data.success) {
+          return toast.error("Failed to initiate payment");
+        }
+
+        // Step 2: Store order data in localStorage for callback verification
+        const tempOrderData = {
+          ...orderData,
+          merchantTransactionId: phonePeOrderRes.data.merchantTransactionId
+        };
+        localStorage.setItem('pendingOrder', JSON.stringify(tempOrderData));
+
+        // Step 3: Redirect to PhonePe payment page
+        window.location.href = phonePeOrderRes.data.paymentUrl;
+        
       }
     } catch (err) {
-      toast.error("Order failed. Try again.");
+      console.error('Order placement error:', err);
+      toast.error("Order failed. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -116,13 +143,13 @@ const PlaceOrder = () => {
           {/* Payment Method Selection Boxes */}
           <div className="flex gap-3 flex-col lg:flex-row mt-4">
             
-            {/* Razorpay Option */}
-            <div onClick={() => setMethod('razorpay')}
-              className={`flex items-center gap-4 border p-3 px-5 cursor-pointer rounded-2xl transition-all ${method === 'razorpay' ? 'border-blue-600 bg-blue-50' : 'border-gray-100'}`}>
-              <p className={`min-w-4 h-4 border rounded-full ${method === 'razorpay' ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}></p>
+            {/* PhonePe Option */}
+            <div onClick={() => setMethod('phonepe')}
+              className={`flex items-center gap-4 border p-3 px-5 cursor-pointer rounded-2xl transition-all ${method === 'phonepe' ? 'border-purple-600 bg-purple-50' : 'border-gray-100'}`}>
+              <p className={`min-w-4 h-4 border rounded-full ${method === 'phonepe' ? 'bg-purple-600 border-purple-600' : 'border-gray-300'}`}></p>
               <div className="flex flex-col">
-                <p className='text-black text-[10px] font-black uppercase tracking-widest'>Online Payment</p>
-                <p className='text-gray-400 text-[8px] font-bold uppercase'>Razorpay / Card / UPI</p>
+                <p className='text-black text-[10px] font-black uppercase tracking-widest'>PhonePe Payment</p>
+                <p className='text-gray-400 text-[8px] font-bold uppercase'>UPI / Card / Wallet</p>
               </div>
             </div>
 
@@ -140,8 +167,12 @@ const PlaceOrder = () => {
 
           {/* Place Order Button */}
           <div className="text-end mt-10">
-            <button type='submit' className="w-full md:w-64 bg-black text-white py-4 rounded-2xl text-xs font-black hover:bg-gray-800 transition-all active:scale-95 uppercase tracking-widest shadow-2xl">
-              PLACE ORDER
+            <button 
+              type='submit' 
+              disabled={isProcessing}
+              className="w-full md:w-64 bg-black text-white py-4 rounded-2xl text-xs font-black hover:bg-gray-800 transition-all active:scale-95 uppercase tracking-widest shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isProcessing ? 'PROCESSING...' : 'PLACE ORDER'}
             </button>
           </div>
         </div>

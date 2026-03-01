@@ -2,6 +2,10 @@ import React, { useContext, useEffect } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { ShopContext } from './context/ShopContext'; 
 
+// Routing Components
+import ProtectedRoute from './routing/ProtectedRoute';
+import AdminRoute from './routing/AdminRoute';
+
 // Common Components
 import Navbar from './components/Navbar'; 
 import Footer from './components/Footer';
@@ -17,6 +21,7 @@ import Profile from './pages/public/Profile';
 import OrderTracking from './pages/public/OrderTracking';
 import PlaceOrder from './pages/public/PlaceOrder';
 import Register from './pages/public/Register';
+import PaymentFailed from './pages/public/PaymentFailed';
 
 // Protected Pages
 import OrderSuccess from './pages/protected/OrderSuccess';
@@ -65,23 +70,34 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/track-order" element={<OrderTracking />} />
           <Route path="/place-order" element={<PlaceOrder />} />
+          <Route path="/payment-failed" element={<PaymentFailed />} />
 
           {/* ================= PROTECTED USER ROUTES ================= */}
-          <Route path="/orders" element={<MyOrders />} />
-          <Route path="/order-success" element={<OrderSuccess />} />
+          <Route path="/orders" element={
+            <ProtectedRoute>
+              <MyOrders />
+            </ProtectedRoute>
+          } />
+          <Route path="/order-success" element={
+            <ProtectedRoute>
+              <OrderSuccess />
+            </ProtectedRoute>
+          } />
 
           {/* ================= ADMIN ROUTES ================= */}
-          {token && (
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="add-product" element={<AddProduct />} />
-              <Route path="products" element={<ProductList />} />
-              <Route path="orders" element={<OrderManagement />} />
-              <Route path="edit-product/:id" element={<EditProduct />} />
-              <Route path="update-banner" element={<UpdateBanner />} /> {/* ✅ FIX */}
-            </Route>
-          )}
+          <Route path="/admin" element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="add-product" element={<AddProduct />} />
+            <Route path="products" element={<ProductList />} />
+            <Route path="orders" element={<OrderManagement />} />
+            <Route path="edit-product/:id" element={<EditProduct />} />
+            <Route path="update-banner" element={<UpdateBanner />} />
+          </Route>
 
         </Routes>
       </div>

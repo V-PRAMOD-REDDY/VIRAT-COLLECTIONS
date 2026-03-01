@@ -7,123 +7,189 @@ import { OAuth2Client } from 'google-auth-library';
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const createToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET);
+    return jwt.sign({ id }, process.env.JWT_SECRET, { 
+        expiresIn: process.env.JWT_EXPIRE || '7d' 
+    });
 }
 
-// 1. యూజర్ లాగిన్
-export const loginUser = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const user = await userModel.findOne({ email });
-        if (!user) return res.json({ success: false, message: "User doesn't exist" });
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (isMatch) {
-            const token = createToken(user._id);
-            res.json({ success: true, token });
-        } else {
-            res.json({ success: false, message: "Invalid credentials" });
-        }
-    } catch (error) {
-        res.json({ success: false, message: error.message });
-    }
-}
-
-// 2. యూజర్ రిజిస్ట్రేషన్
-export const registerUser = async (req, res) => {
-    try {
-        const { name, email, password } = req.body;
-        if (!validator.isEmail(email)) return res.json({ success: false, message: "Invalid email" });
-        if (password.length < 8) return res.json({ success: false, message: "Password too short" });
-
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        const newUser = new userModel({ name, email, password: hashedPassword });
-        const user = await newUser.save();
-        const token = createToken(user._id);
-        res.json({ success: true, token });
-    } catch (error) {
-        res.json({ success: false, message: error.message });
-    }
-}
-
-// 3. యూజర్ ప్రొఫైల్ వివరాలను పొందడం
+// 1. Get User Profile
 export const getUserProfile = async (req, res) => {
     try {
-        const { userId } = req.body; 
-        const user = await userModel.findById(userId).select('-password');
-        if (user) {
-            res.json({ success: true, user });
-        } else {
-            res.json({ success: false, message: "User not found" });
+        const userId = req.userId || req.user?._id;
+        
+        if (!userId) {
+            return res.status(401).json({ 
+                success: false, 
+                message: "User not authenticated" 
+            });
         }
+
+        const user = await userModel.findById(userId).select('-password');
+        
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+                address: user.address
+            },
+            message: "Profile retrieved successfully"
+        });
+        
     } catch (error) {
-        res.json({ success: false, message: error.message });
+        console.error('Get Profile Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to retrieve profile" 
+        });
     }
 }
 
-// 4. ప్రొఫైల్ వివరాలను అప్‌డేట్ చేయడం 
-// backend/controllers/userController.js
-
+// 2. Update Profile
 export const updateProfile = async (req, res) => {
     try {
-        const { userId, name, phone, address } = req.body; 
+        const userId = req.userId || req.user?._id;
+        const { name, phone, address } = req.body;
+
+        if (!userId) {
+            return res.status(401).json({ 
+                success: false, 
+                message: "User not authenticated" 
+            });
+        }
+
+        // Input validation
+        if (name && name.trim().length < 2) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Name must be at least 2 characters long" 
+            });
+        }
+
+        if (phone && !validator.isMobilePhone(phone, 'any')) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Please provide a valid phone number" 
+            });
+        }
+
+        // Build update object with only provided fields
+        const updateData = {};
+        if (name) updateData.name = name.trim();
+        if (phone) updateData.phone = phone;
+        if (address) updateData.address = address;
 
         const updatedUser = await userModel.findByIdAndUpdate(
             userId, 
-            { name, phone, address }, 
+            updateData, 
             { 
-                // new: true, // 👈 దీన్ని తొలగించండి
-                returnDocument: 'after', // 👈 వార్నింగ్ రాకుండా ఇది వాడండి
+                new: true,
                 runValidators: true 
             }
-        );
+        ).select('-password');
 
-        if (updatedUser) {
-            res.json({ success: true, message: "Profile Updated Successfully! ✅", user: updatedUser });
-        } else {
-            res.json({ success: false, message: "Update Failed" });
+        if (!updatedUser) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "User not found" 
+            });
         }
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Profile updated successfully! ✅", 
+            user: updatedUser 
+        });
+        
     } catch (error) {
-        res.json({ success: false, message: error.message });
+        console.error('Update Profile Error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to update profile" 
+        });
     }
 }
 
-// 5. గూగుల్ లాగిన్
+// 3. Google Login
 export const googleLogin = async (req, res) => {
     try {
         const { token } = req.body;
-        const ticket = await client.verifyIdToken({ idToken: token, audience: process.env.GOOGLE_CLIENT_ID });
-        const { name, email, picture } = ticket.getPayload();
-        let user = await userModel.findOne({ email });
+
+        if (!token) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Google token is required" 
+            });
+        }
+
+        // Verify Google token
+        const ticket = await client.verifyIdToken({ 
+            idToken: token, 
+            audience: process.env.GOOGLE_CLIENT_ID 
+        });
+        
+        const payload = ticket.getPayload();
+        const { name, email, picture } = payload;
+
+        if (!email) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Email not provided by Google" 
+            });
+        }
+
+        // Check if user exists
+        let user = await userModel.findOne({ email: email.toLowerCase() });
 
         if (!user) {
-            user = new userModel({
-                name, email, 
-                password: await bcrypt.hash(Math.random().toString(36).slice(-8), 10),
-                image: picture
-            });
+            // Create new user for Google login
+            const userData = {
+                name: name || 'Google User',
+                email: email.toLowerCase(),
+                password: await bcrypt.hash(Math.random().toString(36).slice(-8), 12),
+                ...(picture && { image: picture })
+            };
+            
+            user = new userModel(userData);
             await user.save();
         }
-        const jwtToken = createToken(user._id);
-        res.json({ success: true, token: jwtToken });
-    } catch (error) {
-        res.json({ success: false, message: "Google verification failed" });
-    }
-}
 
- // అడ్మిన్ లాగిన్ ఫంక్షన్
-export const adminLogin = async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
-            // adminAuth లో చెక్ చేసే విధంగానే ఇక్కడ టోకెన్ స్ట్రింగ్ ఉండాలి
-            const token = jwt.sign(email + password, process.env.JWT_SECRET);
-            res.json({ success: true, token });
-        } else {
-            res.json({ success: false, message: "Invalid Admin Credentials" });
-        }
+        // Generate JWT token
+        const jwtToken = createToken(user._id);
+        
+        res.status(200).json({ 
+            success: true, 
+            token: jwtToken,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email
+            },
+            message: "Google login successful"
+        });
+        
     } catch (error) {
-        res.json({ success: false, message: error.message });
+        console.error('Google Login Error:', error);
+        
+        if (error.message.includes('verify')) {
+            return res.status(401).json({ 
+                success: false, 
+                message: "Invalid Google token" 
+            });
+        }
+        
+        res.status(500).json({ 
+            success: false, 
+            message: "Google login failed. Please try again." 
+        });
     }
 }

@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -19,6 +19,20 @@ const ShopProvider = ({ children }) => {
       const res = await axios.get(`${backendUrl}/api/product/list`);
       if (res.data.success) setProducts(res.data.products);
     } catch (err) { console.error("PRODUCT FETCH ERROR ❌", err); }
+  };
+
+  const getUserCart = async (userToken) => {
+    try {
+      const response = await axios.post(`${backendUrl}/api/cart/get`, {}, { 
+        headers: { token: userToken } 
+      });
+      if (response.data.success) {
+        setCartItems(response.data.cartData);
+      }
+    } catch (error) {
+      console.error("CART FETCH ERROR ❌", error);
+      setCartItems({}); // Clear cart on error
+    }
   };
 
   const addToCart = async (itemId, size) => {
@@ -75,17 +89,33 @@ const ShopProvider = ({ children }) => {
     return totalCount;
   };
 
-  useEffect(() => { getProductsData(); }, []);
+  useEffect(() => { 
+    getProductsData(); 
+  }, []);
 
   useEffect(() => {
-    if (token) localStorage.setItem("token", token);
-    else { localStorage.removeItem("token"); setCartItems({}); }
+    if (token) {
+      localStorage.setItem("token", token);
+      getUserCart(token); // Load cart data when user logs in or token changes
+    } else { 
+      localStorage.removeItem("token"); 
+      setCartItems({}); 
+    }
   }, [token]);
+
+  // Initialize token and cart data on mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem("token");
+    if (savedToken && savedToken !== token) {
+      setToken(savedToken);
+      getUserCart(savedToken); // Load saved cart data on page refresh
+    }
+  }, []);
 
   const value = {
     products, currency, delivery_fee, cartItems, setCartItems, 
     addToCart, getCartCount, updateQuantity, getCartAmount,
-    token, setToken, backendUrl, search, setSearch, getProductsData
+    token, setToken, backendUrl, search, setSearch, getProductsData, getUserCart
   };
 
   return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;

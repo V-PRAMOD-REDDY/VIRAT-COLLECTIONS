@@ -1,19 +1,45 @@
 import orderModel from "../models/Order.js"; 
 import userModel from "../models/userModel.js";
 
-// --- యూజర్ ఫీచర్స్ ---
+// --- User Features ---
 
-// 1. Cash on Delivery (COD) పద్ధతిలో ఆర్డర్ ప్లేస్ చేయడం
+// 1. Place Order with Cash on Delivery (COD)
 export const placeOrder = async (req, res) => {
     try {
-        // req.body నుండి userId వస్తుంది (authUser మిడిల్‌వేర్ ద్వారా)
-        const { userId, items, amount, address } = req.body;
+        // Get userId from auth middleware (req.userId)
+        const userId = req.userId || req.user?._id;
+        const { items, amount, address } = req.body;
 
-        // సెక్యూరిటీ చెక్: userId లేకపోతే ఎర్రర్ ఆపడం
+        // Validate required fields
         if (!userId) {
-            return res.json({ success: false, message: "User not authenticated!" });
+            return res.status(401).json({ 
+                success: false, 
+                message: "User not authenticated" 
+            });
         }
 
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Order items are required" 
+            });
+        }
+
+        if (!amount || amount <= 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Valid order amount is required" 
+            });
+        }
+
+        if (!address || !address.street || !address.city) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Complete delivery address is required" 
+            });
+        }
+
+        // Create order data
         const orderData = {
             userId, 
             items,
@@ -28,32 +54,50 @@ export const placeOrder = async (req, res) => {
         const newOrder = new orderModel(orderData);
         await newOrder.save();
 
-        // ఆర్డర్ సేవ్ అయిన తర్వాత యూజర్ కార్ట్ క్లియర్ చేయడం
-        // ఇది 'TypeError: Cannot read properties of null (reading cartData)' ఎర్రర్‌ను నివారిస్తుంది
+        // Clear user's cart after successful order
         await userModel.findByIdAndUpdate(userId, { cartData: {} });
 
-        res.json({ success: true, message: "Order Placed Successfully! 🎉" });
+        res.status(201).json({ 
+            success: true, 
+            orderId: newOrder._id,
+            message: "Order placed successfully! 🎉" 
+        });
 
     } catch (error) {
-        console.log("Order Placement Error:", error);
-        res.json({ success: false, message: error.message });
+        console.error("Order Placement Error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to place order. Please try again." 
+        });
     }
 }
 
-// 2. యూజర్ తన ఆర్డర్ హిస్టరీని చూసుకోవడం
+// 2. Get User Order History
 export const userOrders = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const userId = req.userId || req.user?._id;
         
         if (!userId) {
-            return res.json({ success: false, message: "User not identified!" });
+            return res.status(401).json({ 
+                success: false, 
+                message: "User not authenticated" 
+            });
         }
 
-        const orders = await orderModel.find({ userId });
-        res.json({ success: true, orders });
+        const orders = await orderModel.find({ userId }).sort({ date: -1 });
+        
+        res.status(200).json({ 
+            success: true, 
+            orders,
+            message: "Orders retrieved successfully" 
+        });
+        
     } catch (error) {
-        console.log(error);
-        res.json({ success: false, message: error.message });
+        console.error("Get User Orders Error:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Failed to retrieve orders" 
+        });
     }
 }
 
